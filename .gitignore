@@ -1,0 +1,42 @@
+## .NET
+**/bin/
+**/obj/
+**/.vs/
+
+## User-specific
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+## NuGet
+**/packages/
+*.nupkg
+**/[Pp]ackages/
+
+## IntegrationTests - KHÔNG push lên GitHub
+AuctionSys.IntegrationTests/
+
+## Secrets - KHÔNG push file chứa mật khẩu, API key
+**/appsettings.Development.json
+
+## Agent config
+.agent/
+
+## Docker
+docker-compose.override.yml
+
+## OS
+Thumbs.db
+.DS_Store
+
+## IDE
+.idea/
+.vscode/
+*.swp

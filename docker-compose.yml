@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: auctionsys_pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword123
+      POSTGRES_DB: AuctionSysDb
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: auctionsys_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auctionsys_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=AuctionSysDb;Username=postgres;Password=postgrespassword123
+      - Redis__ConnectionString=redis:6379,abortConnect=false
+      - JwtSettings__Secret=SuperSecretKeyForJwtAuthenticationWhichIsVeryLong
+      - JwtSettings__Issuer=AuctionSys
+      - JwtSettings__Audience=AuctionSysUsers
+      - JwtSettings__ExpiryMinutes=1440
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+volumes:
+  pgdata:
