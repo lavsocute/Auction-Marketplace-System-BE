@@ -11,7 +11,23 @@ public enum ItemStatus
     Available,
     Sold,
     InAuction,
-    Expired
+    Expired,
+    InUserSteamInventory,
+    PendingDeposit,
+    InBotInventory,
+    TradeLocked,
+    PendingWithdraw,
+    Withdrawn
+}
+
+public enum SkinExterior
+{
+    NotApplicable,
+    FactoryNew,
+    MinimalWear,
+    FieldTested,
+    WellWorn,
+    BattleScarred
 }
 
 public enum AuctionStatus

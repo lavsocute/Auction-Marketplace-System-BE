@@ -10,7 +10,9 @@ public class Item
     public string? ImageUrl { get; set; }
     public decimal Price { get; set; }
     public ListType ListType { get; set; }
-    public ItemStatus Status { get; set; } = ItemStatus.Available;
+    public ItemStatus Status { get; set; } = ItemStatus.InUserSteamInventory;
+    
+    public string? AssetId { get; set; } // Steam Asset ID
 
     public Guid SellerId { get; set; }
     public User Seller { get; set; } = null!;
@@ -21,6 +23,9 @@ public class Item
     public Auction? Auction { get; set; }
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
+    
+    public SkinMetadata? SkinMetadata { get; set; }
+    public ICollection<BotInventory> BotInventories { get; set; } = new List<BotInventory>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
