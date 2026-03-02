@@ -23,6 +23,11 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Report> Reports { get; set; }
     public DbSet<AuctionWatcher> AuctionWatchers { get; set; }
+    
+    // CS2 Domain
+    public DbSet<Bot> Bots { get; set; }
+    public DbSet<BotInventory> BotInventories { get; set; }
+    public DbSet<SkinMetadata> SkinMetadata { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
