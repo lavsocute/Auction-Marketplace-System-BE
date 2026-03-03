@@ -25,9 +25,10 @@ using AuctionSys.Application.Interfaces.UseCases.Auction;
 using AuctionSys.Application.UseCases.Auction;
 using AuctionSys.Application.Interfaces.UseCases.Review;
 using AuctionSys.Application.UseCases.Review;
-using AuctionSys.Application.Interfaces.UseCases.Notification;
 using AuctionSys.Application.UseCases.Notification;
 using AuctionSys.Application.Interfaces.UseCases.Report;
+using AuctionSys.Application.UseCases.Report;
+using AuctionSys.Application.UseCases.Bot;
 using AuctionSys.Application.UseCases.Report;
 using AuctionSys.Application.Interfaces.UseCases.Chat;
 using AuctionSys.Application.UseCases.Chat;
@@ -203,6 +204,8 @@ builder.Services.AddScoped<IGetConversationsUseCase, GetConversationsUseCase>();
 builder.Services.AddScoped<IGetChatHistoryUseCase, GetChatHistoryUseCase>();
 builder.Services.AddScoped<ISendMessageUseCase, SendMessageUseCase>();
 
+builder.Services.AddScoped<ReleaseTradeLockUseCase>();
+
 builder.Services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -226,6 +229,17 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHangfireDashboard();
+
+// Schedule Background Jobs
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate<ReleaseTradeLockUseCase>(
+        "release-trade-locks",
+        useCase => useCase.ExecuteAsync(CancellationToken.None),
+        "*/5 * * * *" // Run every 5 minutes
+    );
+}
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notification");
