@@ -21,6 +21,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
     public INotificationRepository Notifications { get; }
     public IReportRepository Reports { get; }
     public IAuctionWatcherRepository AuctionWatchers { get; }
+    public IBotRepository Bots { get; }
     public IBotInventoryRepository BotInventories { get; }
 
     public UnitOfWork(
@@ -39,6 +40,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         INotificationRepository notifications,
         IReportRepository reports,
         IAuctionWatcherRepository auctionWatchers,
+        IBotRepository bots,
         IBotInventoryRepository botInventories)
     {
         _context = context;
@@ -56,6 +58,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         Notifications = notifications;
         Reports = reports;
         AuctionWatchers = auctionWatchers;
+        Bots = bots;
         BotInventories = botInventories;
     }
 

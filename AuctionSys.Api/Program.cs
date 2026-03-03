@@ -149,6 +149,7 @@ builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IAuctionWatcherRepository, AuctionWatcherRepository>();
+builder.Services.AddScoped<IBotRepository, BotRepository>();
 builder.Services.AddScoped<IBotInventoryRepository, BotInventoryRepository>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -205,6 +206,9 @@ builder.Services.AddScoped<IGetConversationsUseCase, GetConversationsUseCase>();
 builder.Services.AddScoped<IGetChatHistoryUseCase, GetChatHistoryUseCase>();
 builder.Services.AddScoped<ISendMessageUseCase, SendMessageUseCase>();
 
+builder.Services.AddScoped<IAddBotUseCase, AddBotUseCase>();
+builder.Services.AddScoped<IDepositItemUseCase, DepositItemUseCase>();
+builder.Services.AddScoped<IWithdrawItemUseCase, WithdrawItemUseCase>();
 builder.Services.AddScoped<ReleaseTradeLockUseCase>();
 
 builder.Services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
