@@ -1,5 +1,7 @@
 using AuctionSys.Application.Common;
 
+using AuctionSys.Application.Common;
+
 namespace AuctionSys.Application.Interfaces.UseCases.Bot;
 
 public interface IWithdrawItemUseCase
