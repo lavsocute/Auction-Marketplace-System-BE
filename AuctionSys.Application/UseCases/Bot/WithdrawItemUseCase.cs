@@ -1,4 +1,4 @@
-using AuctionSys.Application.Common;
+using AuctionSys.Application.Common.Models;
 using AuctionSys.Application.Interfaces.UseCases.Bot;
 using AuctionSys.Domain.Enums;
 using AuctionSys.Domain.Interfaces;

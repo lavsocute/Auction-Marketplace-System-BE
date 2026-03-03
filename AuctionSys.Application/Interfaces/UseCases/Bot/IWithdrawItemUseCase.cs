@@ -1,6 +1,4 @@
-using AuctionSys.Application.Common;
-
-using AuctionSys.Application.Common;
+using AuctionSys.Application.Common.Models;
 
 namespace AuctionSys.Application.Interfaces.UseCases.Bot;
 
