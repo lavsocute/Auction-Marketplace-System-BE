@@ -21,6 +21,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
     public INotificationRepository Notifications { get; }
     public IReportRepository Reports { get; }
     public IAuctionWatcherRepository AuctionWatchers { get; }
+    public IBotInventoryRepository BotInventories { get; }
 
     public UnitOfWork(
         AppDbContext context,
@@ -37,7 +38,8 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         IWishlistRepository wishlists,
         INotificationRepository notifications,
         IReportRepository reports,
-        IAuctionWatcherRepository auctionWatchers)
+        IAuctionWatcherRepository auctionWatchers,
+        IBotInventoryRepository botInventories)
     {
         _context = context;
         Users = users;
@@ -54,6 +56,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         Notifications = notifications;
         Reports = reports;
         AuctionWatchers = auctionWatchers;
+        BotInventories = botInventories;
     }
 
     public async Task<int> CompleteAsync()

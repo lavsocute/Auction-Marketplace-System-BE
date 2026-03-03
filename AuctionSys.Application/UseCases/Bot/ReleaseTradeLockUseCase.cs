@@ -1,18 +1,17 @@
 using AuctionSys.Domain.Enums;
-using AuctionSys.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using AuctionSys.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace AuctionSys.Application.UseCases.Bot;
 
 public class ReleaseTradeLockUseCase
 {
-    private readonly AppDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ReleaseTradeLockUseCase> _logger;
 
-    public ReleaseTradeLockUseCase(AppDbContext context, ILogger<ReleaseTradeLockUseCase> logger)
+    public ReleaseTradeLockUseCase(IUnitOfWork unitOfWork, ILogger<ReleaseTradeLockUseCase> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -24,14 +23,7 @@ public class ReleaseTradeLockUseCase
         {
             var now = DateTime.UtcNow;
 
-            // Find items in bot inventory that are TradeLocked and time has expired
-            // Also need to join with Item to update its status
-            var expiredLocks = await _context.BotInventories
-                .Include(bi => bi.Item)
-                .Where(bi => bi.Item.Status == ItemStatus.TradeLocked && 
-                             bi.TradeLockedUntil != null && 
-                             bi.TradeLockedUntil <= now)
-                .ToListAsync(cancellationToken);
+            var expiredLocks = await _unitOfWork.BotInventories.GetExpiredTradeLocksWithItemsAsync(now);
 
             if (!expiredLocks.Any())
             {
@@ -46,17 +38,19 @@ public class ReleaseTradeLockUseCase
                 botInventory.Item.Status = ItemStatus.InBotInventory;
                 botInventory.Item.UpdatedAt = now;
                 
-                // Keep TradeLockedUntil value for history, but status indicates it's unlocked
+                await _unitOfWork.BotInventories.UpdateAsync(botInventory);
+                await _unitOfWork.Items.UpdateAsync(botInventory.Item);
+                
                 _logger.LogInformation($"Released trade lock for Item {botInventory.ItemId} (AssetId: {botInventory.Item.AssetId})");
             }
 
-            var saved = await _context.SaveChangesAsync(cancellationToken);
+            var saved = await _unitOfWork.CompleteAsync();
             _logger.LogInformation($"Successfully updated {saved} records in database.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while processing trade lock release job.");
-            throw; // Hangfire will catch this and retry if configured
+            throw; 
         }
     }
 }

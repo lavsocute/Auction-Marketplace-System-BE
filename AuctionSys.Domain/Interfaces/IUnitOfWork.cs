@@ -16,6 +16,9 @@ public interface IUnitOfWork : IAsyncDisposable, IDisposable
     INotificationRepository Notifications { get; }
     IReportRepository Reports { get; }
     IAuctionWatcherRepository AuctionWatchers { get; }
+    
+    // CS2 Domain
+    IBotInventoryRepository BotInventories { get; }
 
     Task<int> CompleteAsync();
     Task BeginTransactionAsync();
