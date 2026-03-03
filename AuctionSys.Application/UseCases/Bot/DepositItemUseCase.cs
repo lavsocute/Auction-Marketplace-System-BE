@@ -26,23 +26,23 @@ public class DepositItemUseCase : IDepositItemUseCase
             var bot = await _unitOfWork.Bots.GetByIdAsync(botId);
             if (bot == null || !bot.IsActive)
             {
-                return ApiResponse<string>.Error("Bot not found or missing from pool.");
+                return ApiResponse<string>.Fail("Bot not found or missing from pool.", 404);
             }
 
             var user = await _unitOfWork.Users.GetByIdAsync(sellerId);
             if (user == null)
             {
-                return ApiResponse<string>.Error("User not found.");
+                return ApiResponse<string>.Fail("User not found.", 404);
             }
 
             if (request.CategoryId.HasValue)
             {
                 var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId.Value);
-                if (category == null) return ApiResponse<string>.Error("Invalid category ID.");
+                if (category == null) return ApiResponse<string>.Fail("Invalid category ID.", 400);
             }
 
             // Create Item
-            var item = new Item
+            var item = new AuctionSys.Domain.Entities.Item
             {
                 Title = request.Title,
                 Description = request.Description,
@@ -102,7 +102,7 @@ public class DepositItemUseCase : IDepositItemUseCase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while processing deposit request");
-            return ApiResponse<string>.Error("An internal error occurred during deposit.");
+            return ApiResponse<string>.Fail("An internal error occurred during deposit.", 500);
         }
     }
 }

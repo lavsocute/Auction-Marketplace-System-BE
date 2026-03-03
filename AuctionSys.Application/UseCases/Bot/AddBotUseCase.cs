@@ -25,7 +25,7 @@ public class AddBotUseCase : IAddBotUseCase
             var existingBot = await _unitOfWork.Bots.GetBySteamIdAsync(request.SteamId);
             if (existingBot != null)
             {
-                return ApiResponse<BotResponseDto>.Error("Bot with this Steam ID already exists.");
+                return ApiResponse<BotResponseDto>.Fail("Bot with this Steam ID already exists.");
             }
 
             var bot = new AuctionSys.Domain.Entities.Bot
@@ -56,7 +56,7 @@ public class AddBotUseCase : IAddBotUseCase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while adding bot");
-            return ApiResponse<BotResponseDto>.Error("An internal error occurred while adding the bot.");
+            return ApiResponse<BotResponseDto>.Fail("An internal error occurred while adding the bot.", 500);
         }
     }
 }

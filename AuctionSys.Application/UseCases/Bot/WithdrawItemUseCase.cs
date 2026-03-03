@@ -22,23 +22,23 @@ public class WithdrawItemUseCase : IWithdrawItemUseCase
         try
         {
             var item = await _unitOfWork.Items.GetByIdAsync(itemId);
-            if (item == null) return ApiResponse<bool>.Error("Item not found.");
+            if (item == null) return ApiResponse<bool>.Fail("Item not found.", 404);
             
             // Validate Ownership
             if (item.SellerId != userId)
             {
-                return ApiResponse<bool>.Error("You cannot withdraw an item you do not own.");
+                return ApiResponse<bool>.Fail("You cannot withdraw an item you do not own.", 403);
             }
 
             // Check Trade Lock Status (must be purely InBotInventory, not TradeLocked)
             if (item.Status == ItemStatus.TradeLocked)
             {
-                return ApiResponse<bool>.Error("This item is currently trade-locked and cannot be withdrawn.");
+                return ApiResponse<bool>.Fail("This item is currently trade-locked and cannot be withdrawn.", 400);
             }
 
             if (item.Status != ItemStatus.InBotInventory)
             {
-                return ApiResponse<bool>.Error($"This item cannot be withdrawn because its true status is {item.Status}.");
+                return ApiResponse<bool>.Fail($"This item cannot be withdrawn because its true status is {item.Status}.", 400);
             }
 
             // Find matching Bot Inventory record to ensure its valid
@@ -47,7 +47,7 @@ public class WithdrawItemUseCase : IWithdrawItemUseCase
             
             if (inventoryRecord == null)
             {
-                return ApiResponse<bool>.Error("This item is not present on the specified bot.");
+                return ApiResponse<bool>.Fail("This item is not present on the specified bot.", 404);
             }
 
             await _unitOfWork.BeginTransactionAsync();
@@ -77,7 +77,7 @@ public class WithdrawItemUseCase : IWithdrawItemUseCase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing withdraw request");
-            return ApiResponse<bool>.Error("An internal error occurred during the withdrawal.");
+            return ApiResponse<bool>.Fail("An internal error occurred during the withdrawal.", 500);
         }
     }
 }

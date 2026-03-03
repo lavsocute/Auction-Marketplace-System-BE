@@ -39,7 +39,7 @@ public class BotsController : ControllerBase
     {
         var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdString, out var userId))
-            return Unauthorized(ApiResponse<string>.Error("Invalid token or user not found."));
+            return Unauthorized(ApiResponse<string>.Fail("Invalid token or user not found."));
 
         var response = await _depositItemUseCase.ExecuteAsync(botId, userId, request);
         return StatusCode(response.StatusCode, response);
@@ -51,7 +51,7 @@ public class BotsController : ControllerBase
     {
         var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdString, out var userId))
-            return Unauthorized(ApiResponse<bool>.Error("Invalid token or user not found."));
+            return Unauthorized(ApiResponse<bool>.Fail("Invalid token or user not found."));
 
         var response = await _withdrawItemUseCase.ExecuteAsync(botId, itemId, userId);
         return StatusCode(response.StatusCode, response);
