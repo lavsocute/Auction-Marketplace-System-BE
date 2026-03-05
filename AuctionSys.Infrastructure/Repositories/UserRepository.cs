@@ -20,11 +20,6 @@ public class UserRepository : AsyncRepository<User>, IUserRepository
     }
 }
 
-public class ItemRepository : AsyncRepository<Item>, IItemRepository
-{
-    public ItemRepository(AppDbContext context) : base(context) { }
-}
-
 public class WalletRepository : AsyncRepository<Wallet>, IWalletRepository
 {
     public WalletRepository(AppDbContext context) : base(context) { }

@@ -119,7 +119,7 @@ public class PurchaseItemUseCase : IPurchaseItemUseCase
 
             return ApiResponse<string>.Success("Mua sản phẩm thành công!");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await _unitOfWork.RollbackTransactionAsync();
             throw; // Let Global Exception Middleware handle logging and returning 500

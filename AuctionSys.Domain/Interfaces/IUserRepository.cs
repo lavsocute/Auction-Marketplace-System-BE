@@ -8,10 +8,6 @@ public interface IUserRepository : IAsyncRepository<User>
     Task<bool> EmailExistsAsync(string email);
 }
 
-public interface IItemRepository : IAsyncRepository<Item>
-{
-}
-
 public interface IWalletRepository : IAsyncRepository<Wallet>
 {
     Task<Wallet?> GetByUserIdAsync(Guid userId);

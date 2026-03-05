@@ -1,6 +1,5 @@
 using AuctionSys.Application.Common.Models;
 using AuctionSys.Application.DTOs.Bot;
-using AuctionSys.Application.DTOs.Bot;
 
 namespace AuctionSys.Application.Interfaces.UseCases.Bot;
 

@@ -14,17 +14,20 @@ public class ItemsController : ControllerBase
     private readonly ICreateItemUseCase _createItemUseCase;
     private readonly IGetItemDetailUseCase _getItemDetailUseCase;
     private readonly IPurchaseItemUseCase _purchaseItemUseCase;
+    private readonly IGetMarketplaceItemsUseCase _getMarketplaceItemsUseCase;
 
     public ItemsController(
         IGetItemsUseCase getItemsUseCase,
         ICreateItemUseCase createItemUseCase,
         IGetItemDetailUseCase getItemDetailUseCase,
-        IPurchaseItemUseCase purchaseItemUseCase)
+        IPurchaseItemUseCase purchaseItemUseCase,
+        IGetMarketplaceItemsUseCase getMarketplaceItemsUseCase)
     {
         _getItemsUseCase = getItemsUseCase;
         _createItemUseCase = createItemUseCase;
         _getItemDetailUseCase = getItemDetailUseCase;
         _purchaseItemUseCase = purchaseItemUseCase;
+        _getMarketplaceItemsUseCase = getMarketplaceItemsUseCase;
     }
 
     private Guid GetUserId()
@@ -43,6 +46,14 @@ public class ItemsController : ControllerBase
         [FromQuery] string? search = null)
     {
         var response = await _getItemsUseCase.ExecuteAsync(pageNumber, pageSize, categoryId, search);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpGet("Marketplace")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMarketplaceItems([FromQuery] MarketplaceItemFilterDto filter)
+    {
+        var response = await _getMarketplaceItemsUseCase.ExecuteAsync(filter);
         return StatusCode(response.StatusCode, response);
     }
 
