@@ -195,3 +195,4 @@ dotnet run
 | **Reports**  | POST   | `/api/Reports`                     | Báo cáo vi phạm          |
 
 > Xem đầy đủ tại Swagger UI: http://localhost:5000/swagger
+
