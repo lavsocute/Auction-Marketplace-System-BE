@@ -1,4 +1,5 @@
 using AuctionSys.Domain.Entities;
+using AuctionSys.Domain.Enums;
 
 namespace AuctionSys.Domain.Interfaces;
 
@@ -19,6 +20,8 @@ public interface IWalletTransactionRepository : IAsyncRepository<WalletTransacti
 
 public interface IAuctionRepository : IAsyncRepository<Auction>
 {
+    Task<(IReadOnlyList<Auction> Auctions, int TotalCount)> GetPagedAuctionsAsync(
+        int pageNumber, int pageSize, AuctionStatus? status);
 }
 
 public interface IBidRepository : IAsyncRepository<Bid>

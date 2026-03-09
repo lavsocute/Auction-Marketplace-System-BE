@@ -20,30 +20,22 @@ public class GetAuctionsUseCase : IGetAuctionsUseCase
 
     public async Task<ApiResponse<PagedResponse<AuctionDto>>> ExecuteAsync(int pageNumber = 1, int pageSize = 10, string? status = null)
     {
-        var allAuctions = await _unitOfWork.Auctions.ListAllAsync();
-        var query = allAuctions.AsEnumerable();
-
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AuctionStatus>(status, true, out var parsedStatus))
+        AuctionStatus? parsedStatus = null;
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AuctionStatus>(status, true, out var result))
         {
-            query = query.Where(a => a.Status == parsedStatus);
+            parsedStatus = result;
         }
 
-        var totalAuctions = query.Count();
+        var (auctions, totalAuctions) = await _unitOfWork.Auctions.GetPagedAuctionsAsync(pageNumber, pageSize, parsedStatus);
 
-        var pagedAuctions = query
-            .OrderByDescending(a => a.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        var dtos = _mapper.Map<IEnumerable<AuctionDto>>(pagedAuctions).ToList();
+        var dtos = _mapper.Map<IEnumerable<AuctionDto>>(auctions).ToList();
         
-        // Manual Include Item cho Demo (Thực tế Join SQL query)
-        foreach (var dto in dtos)
+        for (int i = 0; i < dtos.Count; i++)
         {
-            var item = await _unitOfWork.Items.GetByIdAsync(dto.ItemId);
-            if (item != null)
-                dto.Item = _mapper.Map<AuctionSys.Application.DTOs.Item.ItemDto>(item);
+            if (auctions[i].Item != null && dtos[i].Item == null)
+            {
+                dtos[i].Item = _mapper.Map<AuctionSys.Application.DTOs.Item.ItemDto>(auctions[i].Item);
+            }
         }
 
         return ApiResponse<PagedResponse<AuctionDto>>.Success(new PagedResponse<AuctionDto>

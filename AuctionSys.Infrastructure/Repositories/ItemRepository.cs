@@ -27,8 +27,10 @@ public class ItemRepository : AsyncRepository<Item>, IItemRepository
         string? sortBy, int pageNumber, int pageSize)
     {
         var query = _context.Items
+            .AsNoTracking()
             .Include(i => i.SkinMetadata)
             .Include(i => i.BotInventories)
+            .AsSplitQuery()
             .Where(i => i.Status == ItemStatus.InBotInventory || i.Status == ItemStatus.TradeLocked);
 
         // Apply Filters
@@ -57,6 +59,34 @@ public class ItemRepository : AsyncRepository<Item>, IItemRepository
 
         var totalCount = await query.CountAsync();
         var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
+    public async Task<(IReadOnlyList<Item> Items, int TotalCount)> GetPagedItemsAsync(
+        int pageNumber, int pageSize, Guid? categoryId, string? search)
+    {
+        var query = _context.Items.AsNoTracking();
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(i => i.CategoryId == categoryId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.Trim().ToLower();
+            query = query.Where(i => i.Title.ToLower().Contains(searchLower) || 
+                                     i.Description.ToLower().Contains(searchLower));
+        }
+
+        var totalCount = await query.CountAsync();
+        
+        var items = await query
+            .OrderByDescending(i => i.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

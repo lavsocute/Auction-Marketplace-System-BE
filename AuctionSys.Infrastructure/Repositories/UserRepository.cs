@@ -1,4 +1,5 @@
 using AuctionSys.Domain.Entities;
+using AuctionSys.Domain.Enums;
 using AuctionSys.Domain.Interfaces;
 using AuctionSys.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,30 @@ public class WalletTransactionRepository : AsyncRepository<WalletTransaction>, I
 public class AuctionRepository : AsyncRepository<Auction>, IAuctionRepository
 {
     public AuctionRepository(AppDbContext context) : base(context) { }
+
+    public async Task<(IReadOnlyList<Auction> Auctions, int TotalCount)> GetPagedAuctionsAsync(
+        int pageNumber, int pageSize, AuctionStatus? status)
+    {
+        var query = _dbContext.Set<Auction>()
+            .AsNoTracking()
+            .Include(a => a.Item)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(a => a.Status == status.Value);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var auctions = await query
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (auctions, totalCount);
+    }
 }
 
 public class BidRepository : AsyncRepository<Bid>, IBidRepository

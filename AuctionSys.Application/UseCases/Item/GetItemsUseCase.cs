@@ -23,37 +23,14 @@ public class GetItemsUseCase : IGetItemsUseCase
         Guid? categoryId = null, 
         string? search = null)
     {
-        // Lấy tất cả Items từ DB (trong thực tế nên query IQueryable từ Repo để tránh load all)
-        var allItems = await _unitOfWork.Items.ListAllAsync();
-        
-        var query = allItems.AsEnumerable();
+        var (items, totalCount) = await _unitOfWork.Items.GetPagedItemsAsync(pageNumber, pageSize, categoryId, search);
 
-        if (categoryId.HasValue)
-        {
-            query = query.Where(i => i.CategoryId == categoryId.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var searchLower = search.Trim().ToLower();
-            query = query.Where(i => i.Title.ToLower().Contains(searchLower) || 
-                                     i.Description.ToLower().Contains(searchLower));
-        }
-
-        var totalItems = query.Count();
-        
-        var pagedItems = query
-            .OrderByDescending(i => i.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        var dtos = _mapper.Map<IEnumerable<ItemDto>>(pagedItems);
+        var dtos = _mapper.Map<IEnumerable<ItemDto>>(items);
 
         return ApiResponse<PagedResponse<ItemDto>>.Success(new PagedResponse<ItemDto>
         {
             Items = dtos,
-            TotalCount = totalItems,
+            TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
         });

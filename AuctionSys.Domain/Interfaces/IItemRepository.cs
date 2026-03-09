@@ -11,4 +11,6 @@ public interface IItemRepository : IAsyncRepository<Item>
         decimal? minPrice, decimal? maxPrice, string? searchTerm,
         decimal? minFloat, decimal? maxFloat, int? patternIndex, SkinExterior? exterior, bool? isStatTrak, bool? hasStickers,
         string? sortBy, int pageNumber, int pageSize);
+    Task<(IReadOnlyList<Item> Items, int TotalCount)> GetPagedItemsAsync(
+        int pageNumber, int pageSize, Guid? categoryId, string? search);
 }
