@@ -18,12 +18,12 @@ public class GetItemsUseCase : IGetItemsUseCase
     }
 
     public async Task<ApiResponse<PagedResponse<ItemDto>>> ExecuteAsync(
-        int pageNumber = 1, 
+        string? cursor = null, 
         int pageSize = 10, 
         Guid? categoryId = null, 
         string? search = null)
     {
-        var (items, totalCount) = await _unitOfWork.Items.GetPagedItemsAsync(pageNumber, pageSize, categoryId, search);
+        var (items, totalCount, nextCursor) = await _unitOfWork.Items.GetPagedItemsAsync(cursor, pageSize, categoryId, search);
 
         var dtos = _mapper.Map<IEnumerable<ItemDto>>(items);
 
@@ -31,8 +31,7 @@ public class GetItemsUseCase : IGetItemsUseCase
         {
             Items = dtos,
             TotalCount = totalCount,
-            PageNumber = pageNumber,
-            PageSize = pageSize
+            NextCursor = nextCursor
         });
     }
 }

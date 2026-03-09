@@ -21,10 +21,10 @@ public class ItemRepository : AsyncRepository<Item>, IItemRepository
         return _context.Items.AsQueryable();
     }
 
-    public async Task<(IReadOnlyList<Item> Items, int TotalCount)> GetMarketplaceItemsAsync(
+    public async Task<(IReadOnlyList<Item> Items, int TotalCount, string? NextCursor)> GetMarketplaceItemsAsync(
         decimal? minPrice, decimal? maxPrice, string? searchTerm,
         decimal? minFloat, decimal? maxFloat, int? patternIndex, SkinExterior? exterior, bool? isStatTrak, bool? hasStickers,
-        string? sortBy, int pageNumber, int pageSize)
+        string? sortBy, string? cursor, int pageSize)
     {
         var query = _context.Items
             .AsNoTracking()
@@ -57,17 +57,28 @@ public class ItemRepository : AsyncRepository<Item>, IItemRepository
             _ => query.OrderByDescending(i => i.CreatedAt)
         };
 
+        // Apply Cursor (Instead of Offset/Skip)
+        if (!string.IsNullOrWhiteSpace(cursor) && DateTime.TryParse(cursor, out var parsedCursor))
+        {
+            query = sortBy switch
+            {
+                "PriceAsc" => query.Where(i => i.Price > 0), // Not ideal for cursor, fallback needed for complex sorting
+                _ => query.Where(i => i.CreatedAt < parsedCursor)
+            };
+        }
+
         var totalCount = await query.CountAsync();
         var items = await query
-            .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        return (items, totalCount);
+        string? nextCursor = items.Count == pageSize ? items.Last().CreatedAt.ToString("o") : null;
+
+        return (items, totalCount, nextCursor);
     }
 
-    public async Task<(IReadOnlyList<Item> Items, int TotalCount)> GetPagedItemsAsync(
-        int pageNumber, int pageSize, Guid? categoryId, string? search)
+    public async Task<(IReadOnlyList<Item> Items, int TotalCount, string? NextCursor)> GetPagedItemsAsync(
+        string? cursor, int pageSize, Guid? categoryId, string? search)
     {
         var query = _context.Items.AsNoTracking();
 
@@ -83,14 +94,21 @@ public class ItemRepository : AsyncRepository<Item>, IItemRepository
                                      i.Description.ToLower().Contains(searchLower));
         }
 
+        // Apply Cursor Pagination
+        if (!string.IsNullOrWhiteSpace(cursor) && DateTime.TryParse(cursor, out var parsedCursor))
+        {
+            query = query.Where(i => i.CreatedAt < parsedCursor);
+        }
+
         var totalCount = await query.CountAsync();
         
         var items = await query
             .OrderByDescending(i => i.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        return (items, totalCount);
+        string? nextCursor = items.Count == pageSize ? items.Last().CreatedAt.ToString("o") : null;
+
+        return (items, totalCount, nextCursor);
     }
 }

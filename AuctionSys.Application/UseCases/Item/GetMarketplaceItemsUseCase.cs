@@ -20,10 +20,10 @@ public class GetMarketplaceItemsUseCase : IGetMarketplaceItemsUseCase
     public async Task<ApiResponse<PagedResponse<MarketplaceItemDto>>> ExecuteAsync(MarketplaceItemFilterDto filter)
     {
         // Delegate complex query completely to Repository to keep Application layer free of EF Core references
-        var (items, totalCount) = await _unitOfWork.Items.GetMarketplaceItemsAsync(
+        var (items, totalCount, nextCursor) = await _unitOfWork.Items.GetMarketplaceItemsAsync(
             filter.MinPrice, filter.MaxPrice, filter.SearchTerm,
             filter.MinFloat, filter.MaxFloat, filter.PatternIndex, filter.Exterior, filter.IsStatTrak, filter.HasStickers,
-            filter.SortBy?.ToString(), filter.PageNumber, filter.PageSize
+            filter.SortBy?.ToString(), filter.Cursor, filter.PageSize
         );
 
         // 5. Map to DTO
@@ -57,8 +57,8 @@ public class GetMarketplaceItemsUseCase : IGetMarketplaceItemsUseCase
         {
             Items = dtos,
             TotalCount = totalCount,
-            PageNumber = filter.PageNumber,
-            PageSize = filter.PageSize
+            NextCursor = nextCursor,
+            // Removed PageNumber and PageSize as they were replaced by NextCursor in PagedResponse
         };
 
         return ApiResponse<PagedResponse<MarketplaceItemDto>>.Success(pagedResponse);

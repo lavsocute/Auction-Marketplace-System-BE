@@ -40,12 +40,12 @@ public class ItemsController : ControllerBase
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetItems(
-        [FromQuery] int pageNumber = 1, 
+        [FromQuery] string? cursor = null, 
         [FromQuery] int pageSize = 10, 
         [FromQuery] Guid? categoryId = null, 
         [FromQuery] string? search = null)
     {
-        var response = await _getItemsUseCase.ExecuteAsync(pageNumber, pageSize, categoryId, search);
+        var response = await _getItemsUseCase.ExecuteAsync(cursor, pageSize, categoryId, search);
         return StatusCode(response.StatusCode, response);
     }
 

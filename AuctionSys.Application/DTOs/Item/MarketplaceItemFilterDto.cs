@@ -15,7 +15,7 @@ public class MarketplaceItemFilterDto
     public MarketplaceSortBy? SortBy { get; set; }
 
     // Pagination
-    public int PageNumber { get; set; } = 1;
+    public string? Cursor { get; set; }
     public int PageSize { get; set; } = 20;
 }
 
