@@ -2,7 +2,7 @@
 **Hệ thống Đấu giá & Sàn thương mại điện tử (Auction & Marketplace Platform)**
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)
 ![Redis](https://img.shields.io/badge/Redis-7-red.svg)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)
@@ -79,7 +79,7 @@ AuctionSys/
 
 | Layer           | Technology                          |
 |-----------------|-------------------------------------|
-| Runtime         | .NET 9.0                            |
+| Runtime         | .NET 8.0                            |
 | Web API         | ASP.NET Core                        |
 | ORM             | Entity Framework Core               |
 | Database        | PostgreSQL 15                       |
@@ -145,7 +145,7 @@ AuctionSys/
 ## 🚀 Bắt đầu nhanh (Local Development)
 
 ### 📋 Yêu cầu hệ thống
-- .NET SDK 9.0
+- .NET SDK 8.0
 - Docker Desktop
 - (Tùy chọn) PostgreSQL 15+ và Redis nếu chạy không qua Docker
 

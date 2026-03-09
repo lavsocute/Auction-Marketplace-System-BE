@@ -1,5 +1,5 @@
 # Sử dụng .NET 9 SDK để build
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 # Copy từng csproj và restore (KHÔNG bao gồm IntegrationTests)
@@ -18,7 +18,7 @@ WORKDIR /app/AuctionSys.Api
 RUN dotnet publish -c Release -o out --no-restore
 
 # Chạy app bằng .NET 9 ASP.NET Core Runtime (dung lượng nhẹ hơn)
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/AuctionSys.Api/out ./
 
