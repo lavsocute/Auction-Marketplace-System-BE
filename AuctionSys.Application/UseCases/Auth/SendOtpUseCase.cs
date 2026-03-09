@@ -1,3 +1,4 @@
+using System.Text;
 using AuctionSys.Application.Common.Models;
 using AuctionSys.Application.DTOs.Auth;
 using AuctionSys.Application.Interfaces.Auth;
@@ -24,8 +25,14 @@ public class SendOtpUseCase : AuctionSys.Application.Interfaces.UseCases.Auth.IS
         if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
             return ApiResponse<string>.Fail("Email đã được sử dụng!");
 
-        // Sinh OTP ngẫu nhiên 6 số
-        var otp = new Random().Next(100000, 999999).ToString();
+        // Sinh OTP ngẫu nhiên 6 số bằng StringBuilder để tránh rác GC
+        var random = new Random();
+        var otpBuilder = new StringBuilder(6);
+        for (int i = 0; i < 6; i++)
+        {
+            otpBuilder.Append(random.Next(0, 10));
+        }
+        var otp = otpBuilder.ToString();
 
         // Lưu vào Redis (TTL 2 phút)
         var cacheOptions = new DistributedCacheEntryOptions
