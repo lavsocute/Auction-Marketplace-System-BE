@@ -10,11 +10,13 @@ public class CloseAuctionUseCase : ICloseAuctionUseCase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IWalletSignatureService _signatureService;
 
-    public CloseAuctionUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis)
+    public CloseAuctionUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _redis = redis;
+        _signatureService = signatureService;
     }
 
     public async Task ExecuteAsync(Guid auctionId)
@@ -58,34 +60,24 @@ public class CloseAuctionUseCase : ICloseAuctionUseCase
                 
                 if (sellerWallet == null)
                 {
-                    sellerWallet = new AuctionSys.Domain.Entities.Wallet { UserId = item.SellerId, Balance = 0, FrozenBalance = 0 };
+                    sellerWallet = new AuctionSys.Domain.Entities.Wallet { UserId = item.SellerId };
+                    sellerWallet.InitializeSignature(_signatureService);
                     await _unitOfWork.Wallets.AddAsync(sellerWallet);
                 }
 
                 if (winnerWallet != null)
                 {
-                    // Trừ tiền đóng băng của Winner
-                    winnerWallet.FrozenBalance -= auction.CurrentPrice;
+                    // Trừ tiền đóng băng của Winner bằng TransactionType.AuctionWin (giả sử coi như trừ tiền bình thường nhưng check rule)
+                    // Note: Cần cẩn thận logic Unfreeze vì lúc PlaceBid là FrozenBalance +=. Bây giờ phải chuyển Frozen thành thực tế mất.
+                    // ProcessTransaction đang giả định Withdraw/Purchase trừ Balance. Còn Bid_Unfreeze trừ FrozenBalance tăng Balance.
+                    // Vậy quy trình đúng của Wallet Ledger cho Winner lúc Auction ended là:
+                    // B1. Giải phóng tiền đóng băng trả về ví: (BidUnfreeze)
+                    winnerWallet.ProcessTransaction(auction.CurrentPrice, TransactionType.BidUnfreeze, $"Mở băng tiền để thanh toán phiên đấu giá '{item.Title}'", _signatureService);
+                    // B2. Trừ tiền thực sự bằng Purchase / AuctionWin
+                    winnerWallet.ProcessTransaction(auction.CurrentPrice, TransactionType.Purchase, $"Chi trả {auction.CurrentPrice:N0} VNĐ cho phiên đấu giá '{item.Title}'", _signatureService);
 
                     // Chuyển tiền cho Seller
-                    sellerWallet.Balance += auction.CurrentPrice;
-
-                    // Ghi Transaction
-                    await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-                    {
-                        WalletId = winnerWallet.Id,
-                        Amount = -auction.CurrentPrice,
-                        Type = TransactionType.AuctionWin,
-                        Description = $"Chi trả {auction.CurrentPrice:N0} VNĐ cho phiên đấu giá '{item.Title}'"
-                    });
-
-                    await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-                    {
-                        WalletId = sellerWallet.Id,
-                        Amount = auction.CurrentPrice,
-                        Type = TransactionType.Sale,
-                        Description = $"Thu tiền từ phiên đấu giá '{item.Title}' (+{auction.CurrentPrice:N0} VNĐ)"
-                    });
+                    sellerWallet.ProcessTransaction(auction.CurrentPrice, TransactionType.Sale, $"Thu tiền từ phiên đấu giá '{item.Title}' (+{auction.CurrentPrice:N0} VNĐ)", _signatureService);
                 }
                 
                 // Cập nhật trạng thái item
@@ -162,10 +154,10 @@ public class CloseAuctionUseCase : ICloseAuctionUseCase
             await _unitOfWork.CommitTransactionAsync();
             await _unitOfWork.CompleteAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            throw new Exception($"Close auction error: {ex.Message}");
         }
         finally
         {

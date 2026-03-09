@@ -11,11 +11,13 @@ public class GetWalletUseCase : IGetWalletUseCase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IWalletSignatureService _signatureService;
 
-    public GetWalletUseCase(IUnitOfWork unitOfWork, IMapper mapper)
+    public GetWalletUseCase(IUnitOfWork unitOfWork, IMapper mapper, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _signatureService = signatureService;
     }
 
     public async Task<ApiResponse<WalletDto>> ExecuteAsync(Guid userId)
@@ -28,10 +30,9 @@ public class GetWalletUseCase : IGetWalletUseCase
         {
             wallet = new AuctionSys.Domain.Entities.Wallet
             {
-                UserId = userId,
-                Balance = 0,
-                FrozenBalance = 0
+                UserId = userId
             };
+            wallet.InitializeSignature(_signatureService);
             await _unitOfWork.Wallets.AddAsync(wallet);
             await _unitOfWork.CompleteAsync();
         }

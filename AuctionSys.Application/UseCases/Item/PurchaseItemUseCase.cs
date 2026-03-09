@@ -11,11 +11,13 @@ public class PurchaseItemUseCase : IPurchaseItemUseCase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IWalletSignatureService _signatureService;
 
-    public PurchaseItemUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis)
+    public PurchaseItemUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _redis = redis;
+        _signatureService = signatureService;
     }
 
     public async Task<ApiResponse<string>> ExecuteAsync(Guid buyerId, Guid itemId)
@@ -62,31 +64,15 @@ public class PurchaseItemUseCase : IPurchaseItemUseCase
             if (sellerWallet == null)
             {
                 // Lazy initialize seller wallet if it doesn't exist
-                sellerWallet = new AuctionSys.Domain.Entities.Wallet { UserId = item.SellerId, Balance = 0, FrozenBalance = 0 };
+                sellerWallet = new AuctionSys.Domain.Entities.Wallet { UserId = item.SellerId };
+                sellerWallet.InitializeSignature(_signatureService);
                 await _unitOfWork.Wallets.AddAsync(sellerWallet);
                 // Cần Save để lấy ID nếu identity generated (Guid thường được sinh trước, DB sẽ nhận)
             }
 
-            // 2. Trừ/Cộng tiền
-            buyerWallet.Balance -= item.Price;
-            sellerWallet.Balance += item.Price;
-
-            // 3. Ghi WalletTransaction
-            await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-            {
-                WalletId = buyerWallet.Id,
-                Amount = -item.Price,
-                Type = TransactionType.Purchase,
-                Description = $"Mua sản phẩm '{item.Title}' (-{item.Price:N0} VNĐ)"
-            });
-
-            await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-            {
-                WalletId = sellerWallet.Id,
-                Amount = item.Price,
-                Type = TransactionType.Sale,
-                Description = $"Bán sản phẩm '{item.Title}' (+{item.Price:N0} VNĐ)"
-            });
+            // 2. Trừ/Cộng tiền bằng ProcessTransaction
+            buyerWallet.ProcessTransaction(item.Price, TransactionType.Purchase, $"Mua sản phẩm '{item.Title}' (-{item.Price:N0} VNĐ)", _signatureService);
+            sellerWallet.ProcessTransaction(item.Price, TransactionType.Sale, $"Bán sản phẩm '{item.Title}' (+{item.Price:N0} VNĐ)", _signatureService);
 
             // 4. Update Item Status & Create Order
             item.Status = ItemStatus.Sold;
@@ -119,10 +105,10 @@ public class PurchaseItemUseCase : IPurchaseItemUseCase
 
             return ApiResponse<string>.Success("Mua sản phẩm thành công!");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw; // Let Global Exception Middleware handle logging and returning 500
+            throw new Exception($"Purchase item error: {ex.Message}"); // Let Global Exception Middleware handle logging and returning 500
         }
         finally
         {

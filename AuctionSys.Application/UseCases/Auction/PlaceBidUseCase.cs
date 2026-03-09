@@ -14,12 +14,14 @@ public class PlaceBidUseCase : IPlaceBidUseCase
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConnectionMultiplexer _redis;
     private readonly IMapper _mapper;
+    private readonly IWalletSignatureService _signatureService;
 
-    public PlaceBidUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis, IMapper mapper)
+    public PlaceBidUseCase(IUnitOfWork unitOfWork, IConnectionMultiplexer redis, IMapper mapper, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _redis = redis;
         _mapper = mapper;
+        _signatureService = signatureService;
     }
 
     public async Task<ApiResponse<BidDto>> ExecuteAsync(Guid bidderId, Guid auctionId, PlaceBidDto request)
@@ -92,16 +94,7 @@ public class PlaceBidUseCase : IPlaceBidUseCase
 
                 if (prevBidderWallet != null)
                 {
-                    prevBidderWallet.FrozenBalance -= previousPrice;
-                    prevBidderWallet.Balance += previousPrice;
-                    
-                    await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-                    {
-                        WalletId = prevBidderWallet.Id,
-                        Amount = previousPrice,
-                        Type = TransactionType.BidUnfreeze,
-                        Description = $"Hoàn trả {previousPrice:N0} VNĐ do có người ra giá cao hơn trong phiên '{item?.Title}'"
-                    });
+                    prevBidderWallet.ProcessTransaction(previousPrice, TransactionType.BidUnfreeze, $"Hoàn trả {previousPrice:N0} VNĐ do có người ra giá cao hơn trong phiên '{item?.Title}'", _signatureService);
 
                     // Thông báo bị vượt giá
                     await _unitOfWork.Notifications.AddAsync(new AuctionSys.Domain.Entities.Notification
@@ -117,21 +110,11 @@ public class PlaceBidUseCase : IPlaceBidUseCase
             else if (previousWinnerId.HasValue && previousWinnerId.Value == bidderId)
             {
                 // Tự hoàn lại khoản tiền đóng băng cũ của chính mình trước khi trừ theo lượng giá mới
-                bidderWallet.FrozenBalance -= previousPrice;
-                bidderWallet.Balance += previousPrice;
+                bidderWallet.ProcessTransaction(previousPrice, TransactionType.BidUnfreeze, $"Chuyển giá trị tiền dự phòng đấu giá trong phiên '{item?.Title}'", _signatureService);
             }
 
             // 3. Xử lý ví người Bid hiện tại (Đóng băng tiền theo mức giá mới)
-            bidderWallet.Balance -= request.Amount;
-            bidderWallet.FrozenBalance += request.Amount;
-            
-            await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
-            {
-                WalletId = bidderWallet.Id,
-                Amount = request.Amount,
-                Type = TransactionType.BidFreeze,
-                Description = $"Đóng băng {request.Amount:N0} VNĐ chờ kết quả phiên đấu giá '{item?.Title}'"
-            });
+            bidderWallet.ProcessTransaction(request.Amount, TransactionType.BidFreeze, $"Đóng băng {request.Amount:N0} VNĐ chờ kết quả phiên đấu giá '{item?.Title}'", _signatureService);
 
             // 4. Cập nhật trạng thái Auction và tạo Bid
             auction.CurrentPrice = request.Amount;
@@ -172,10 +155,10 @@ public class PlaceBidUseCase : IPlaceBidUseCase
             var bidDto = _mapper.Map<BidDto>(bid);
             return ApiResponse<BidDto>.Success(bidDto, "Ra giá thành công!");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            throw new Exception($"Place bid error: {ex.Message}");
         }
         finally
         {

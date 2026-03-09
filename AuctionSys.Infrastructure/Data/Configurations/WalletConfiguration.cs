@@ -11,6 +11,7 @@ public class WalletConfiguration : IEntityTypeConfiguration<Wallet>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Balance).HasPrecision(18, 2);
         builder.Property(x => x.FrozenBalance).HasPrecision(18, 2);
+        builder.Property(x => x.Signature).IsRequired().HasMaxLength(150);
 
         builder.HasOne(x => x.User).WithOne(u => u.Wallet).HasForeignKey<Wallet>(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(x => x.UserId).IsUnique();

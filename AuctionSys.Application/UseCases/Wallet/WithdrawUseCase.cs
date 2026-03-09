@@ -12,11 +12,13 @@ public class WithdrawUseCase : IWithdrawUseCase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IWalletSignatureService _signatureService;
 
-    public WithdrawUseCase(IUnitOfWork unitOfWork, IMapper mapper)
+    public WithdrawUseCase(IUnitOfWork unitOfWork, IMapper mapper, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _signatureService = signatureService;
     }
 
     public async Task<ApiResponse<WalletTransactionDto>> ExecuteAsync(Guid userId, WithdrawDto request)
@@ -35,17 +37,10 @@ public class WithdrawUseCase : IWithdrawUseCase
                 return ApiResponse<WalletTransactionDto>.Fail("Số dư trong ví không đủ để thực hiện rút tiền.");
             }
 
-            wallet.Balance -= request.Amount;
+            // Centralized Append-Only Ledger process
+            wallet.ProcessTransaction(request.Amount, TransactionType.Withdraw, $"Rút tiền về ngân hàng {request.BankName} - STK: {request.BankAccountNumber} (-{request.Amount:N0} VNĐ)", _signatureService);
 
-            var transaction = new WalletTransaction
-            {
-                WalletId = wallet.Id,
-                Amount = -request.Amount,
-                Type = TransactionType.Withdraw,
-                Description = $"Rút tiền về ngân hàng {request.BankName} - STK: {request.BankAccountNumber} (-{request.Amount:N0} VNĐ)"
-            };
-
-            await _unitOfWork.WalletTransactions.AddAsync(transaction);
+            var transaction = wallet.Transactions.Last();
             
             await _unitOfWork.CommitTransactionAsync();
             await _unitOfWork.CompleteAsync();
@@ -53,10 +48,10 @@ public class WithdrawUseCase : IWithdrawUseCase
             var dto = _mapper.Map<WalletTransactionDto>(transaction);
             return ApiResponse<WalletTransactionDto>.Success(dto, "Yêu cầu rút tiền được thực hiện thành công.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            throw new Exception($"Withdraw error: {ex.Message}");
         }
     }
 }

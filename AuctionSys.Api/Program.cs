@@ -35,6 +35,7 @@ using AuctionSys.Application.Interfaces.UseCases.Bot;
 using AuctionSys.Application.UseCases.Bot;
 using AuctionSys.Application.Interfaces.Services;
 using AuctionSys.Infrastructure.Services;
+using AuctionSys.Infrastructure.Security;
 using AuctionSys.Api.Hubs;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -157,6 +158,7 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IEmailService, MockEmailService>();
 builder.Services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
+builder.Services.AddScoped<IWalletSignatureService, WalletSignatureService>();
 
 builder.Services.AddScoped<ISendOtpUseCase, SendOtpUseCase>();
 builder.Services.AddScoped<IRegisterUseCase, RegisterUseCase>();

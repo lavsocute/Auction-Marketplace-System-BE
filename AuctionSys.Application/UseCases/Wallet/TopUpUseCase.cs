@@ -12,11 +12,13 @@ public class TopUpUseCase : ITopUpUseCase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IWalletSignatureService _signatureService;
 
-    public TopUpUseCase(IUnitOfWork unitOfWork, IMapper mapper)
+    public TopUpUseCase(IUnitOfWork unitOfWork, IMapper mapper, IWalletSignatureService signatureService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _signatureService = signatureService;
     }
 
     public async Task<ApiResponse<WalletTransactionDto>> ExecuteAsync(Guid userId, TopUpDto request)
@@ -30,21 +32,16 @@ public class TopUpUseCase : ITopUpUseCase
 
             if (wallet == null)
             {
-                wallet = new AuctionSys.Domain.Entities.Wallet { UserId = userId, Balance = 0, FrozenBalance = 0 };
+                wallet = new AuctionSys.Domain.Entities.Wallet { UserId = userId };
+                wallet.InitializeSignature(_signatureService);
                 await _unitOfWork.Wallets.AddAsync(wallet);
             }
 
-            wallet.Balance += request.Amount;
+            // Centralized Append-Only Ledger process
+            wallet.ProcessTransaction(request.Amount, TransactionType.TopUp, $"Nạp tiền vào tài khoản: +{request.Amount:N0} VNĐ", _signatureService);
 
-            var transaction = new WalletTransaction
-            {
-                WalletId = wallet.Id,
-                Amount = request.Amount,
-                Type = TransactionType.TopUp,
-                Description = $"Nạp tiền vào tài khoản: +{request.Amount:N0} VNĐ"
-            };
-
-            await _unitOfWork.WalletTransactions.AddAsync(transaction);
+            // Access the generated transaction record from the wallet collection for DTO mapping
+            var transaction = wallet.Transactions.Last();
             
             await _unitOfWork.CommitTransactionAsync();
             await _unitOfWork.CompleteAsync();
@@ -52,10 +49,10 @@ public class TopUpUseCase : ITopUpUseCase
             var dto = _mapper.Map<WalletTransactionDto>(transaction);
             return ApiResponse<WalletTransactionDto>.Success(dto, "Nạp tiền thành công.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            throw new Exception($"Top up error: {ex.Message}");
         }
     }
 }
